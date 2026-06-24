@@ -2,7 +2,6 @@ import base64
 import json
 import logging
 import os
-import time
 from pathlib import Path
 
 import requests
@@ -13,10 +12,11 @@ from agent.config import AGENT_ID, SERVER_URL
 logger = logging.getLogger(__name__)
 
 _KEY_FILE = Path(__file__).parent.parent / ".aes_key"
+_LOGS_DIR = Path(__file__).parent.parent / "logs"
+_EVENTS_FILE = _LOGS_DIR / "events.json"
 
 
 def _load_or_create_key() -> bytes:
-    """Load persisted AES-256 key or generate and save a new one."""
     if _KEY_FILE.exists():
         return bytes.fromhex(_KEY_FILE.read_text().strip())
     key = os.urandom(32)
@@ -39,28 +39,45 @@ def _encrypt(data: dict) -> dict:
     }
 
 
-def send_event(event: dict, max_retries: int = 3) -> bool:
-    payload = {
-        "agent_id": AGENT_ID,
-        "data": _encrypt(event),
-    }
-    headers = {"Content-Type": "application/json"}
+def _save_locally(event: dict) -> bool:
+    """Append event to the local events.json log. Returns True on success."""
+    try:
+        _LOGS_DIR.mkdir(parents=True, exist_ok=True)
+        events: list = []
+        if _EVENTS_FILE.exists():
+            try:
+                events = json.loads(_EVENTS_FILE.read_text())
+            except (json.JSONDecodeError, OSError):
+                events = []
+        events.append(event)
+        _EVENTS_FILE.write_text(json.dumps(events, indent=2))
+        logger.info("Event saved locally (%d total)", len(events))
+        return True
+    except OSError as exc:
+        logger.error("Failed to save event locally: %s", exc)
+        return False
 
-    for attempt in range(max_retries):
-        try:
-            resp = requests.post(
-                f"{SERVER_URL}/events",
-                json=payload,
-                headers=headers,
-                timeout=10,
-            )
-            resp.raise_for_status()
-            logger.info("Event sent successfully")
-            return True
-        except requests.exceptions.RequestException as exc:
-            logger.warning("Send attempt %d/%d failed: %s", attempt + 1, max_retries, exc)
-            if attempt < max_retries - 1:
-                time.sleep(2**attempt)
 
-    logger.error("Failed to send event after %d attempts", max_retries)
-    return False
+def _try_remote(event: dict) -> bool:
+    """Single best-effort POST to the remote SOC server. Never raises."""
+    payload = {"agent_id": AGENT_ID, "data": _encrypt(event)}
+    try:
+        resp = requests.post(
+            f"{SERVER_URL}/events",
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=5,
+        )
+        resp.raise_for_status()
+        logger.info("Event forwarded to remote SOC server")
+        return True
+    except requests.exceptions.RequestException as exc:
+        logger.debug("Remote SOC server unreachable (offline fallback active): %s", exc)
+        return False
+
+
+def send_event(event: dict) -> bool:
+    """Save event locally (primary), then attempt remote delivery (optional fallback)."""
+    saved = _save_locally(event)
+    _try_remote(event)
+    return saved
