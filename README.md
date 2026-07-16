@@ -70,3 +70,5 @@ sudo .venv/bin/python -m agent.core
 ## License
 
 Proprietary — © 2026 Optisec. All rights reserved.
+
+Purchase a license at [optisecdev.github.io/optisec-store](https://optisecdev.github.io/optisec-store) ($99/year) · Contact: [ahssanali84.syber@gmail.com](mailto:ahssanali84.syber@gmail.com)
