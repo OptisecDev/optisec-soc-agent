@@ -64,7 +64,7 @@ sudo .venv/bin/python -m agent.core
 ## Security Notes
 
 - `.aes_key` and `.agent_config.json` are excluded from version control via `.gitignore`
-- All events sent to the server are encrypted with AES-256-GCM
+- If a central server existed, events would be encrypted with AES-256-GCM before sending — but no such server is deployed yet, so this has no effect today (see `SERVER_URL` in Configuration above)
 - Logs in `logs/` are also excluded; rotate or archive them externally
 
 ## License
