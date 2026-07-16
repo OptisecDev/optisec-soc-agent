@@ -17,6 +17,11 @@ def _load_or_create_agent_id() -> str:
     return agent_id
 
 
+# NOT YET AVAILABLE: no central SOC server is deployed at this address (or
+# anywhere else) yet. sender.py's remote-sync path will silently fail every
+# time until a real server exists here — all events are stored locally
+# regardless (see sender._save_locally), so this has no effect on the agent
+# working correctly today.
 SERVER_URL = "https://optisec-soc.com/api"
 AGENT_ID = _load_or_create_agent_id()
 SCAN_INTERVAL = 30

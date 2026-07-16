@@ -7,7 +7,7 @@ A lightweight, autonomous Security Operations Center (SOC) agent that continuous
 - **ARP network scanning** — discovers all devices on local private networks every 30 seconds
 - **Unknown device detection** — alerts on any new MAC address that appears on the network
 - **Port scan detection** — flags processes with an abnormally high number of outbound SYN connections
-- **Encrypted event reporting** — events are AES-256-GCM encrypted before being sent to the SOC server
+- **Encrypted event reporting (not yet available)** — the agent can AES-256-GCM encrypt events and attempt delivery to a central SOC server, but no such server is deployed yet; every event is stored locally regardless (see Local event log below)
 - **Local event log** — all scan results are persisted to `logs/events.json` for offline analysis
 
 ## Project Structure
@@ -46,7 +46,7 @@ Edit `agent/config.py` to set:
 
 | Variable        | Default                          | Description                        |
 |-----------------|----------------------------------|------------------------------------|
-| `SERVER_URL`    | `https://optisec-soc.com/api`   | SOC server endpoint                |
+| `SERVER_URL`    | `https://optisec-soc.com/api`   | SOC server endpoint — **not yet live**; no server is deployed here or elsewhere, so remote delivery currently always fails silently and every event stays local-only |
 | `SCAN_INTERVAL` | `30`                             | Seconds between scans              |
 | `LOG_LEVEL`     | `INFO`                           | Python logging level               |
 
